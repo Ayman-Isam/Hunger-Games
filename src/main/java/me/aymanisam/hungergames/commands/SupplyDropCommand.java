@@ -1,6 +1,6 @@
-package me.cantankerousally.hungergames.commands;
+package me.aymanisam.hungergames.commands;
 
-import me.cantankerousally.hungergames.HungerGames;
+import me.aymanisam.hungergames.HungerGames;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.ShulkerBox;
@@ -232,7 +232,7 @@ public class  SupplyDropCommand implements CommandExecutor {
 
                 StringBuilder sb = new StringBuilder();
                 sb.append(ChatColor.GREEN)
-                        .append(plugin.getMessage("supplydrop.append-1")).append(numSupplyDrops).append(plugin.getMessage("suppplydrop.append-2"));
+                        .append(plugin.getMessage("supplydrop.append-1")).append(numSupplyDrops).append(plugin.getMessage("supplydrop.append-2"));
                 for (int i = 0; i < coords.size(); i++) {
                     sb.append(coords.get(i));
                     if (i < coords.size() - 1) {

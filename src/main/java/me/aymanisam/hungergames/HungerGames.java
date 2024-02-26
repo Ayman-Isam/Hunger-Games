@@ -1,11 +1,9 @@
-package me.cantankerousally.hungergames;
+package me.aymanisam.hungergames;
 
-import me.cantankerousally.hungergames.commands.*;
-import me.cantankerousally.hungergames.handler.*;
+import me.aymanisam.hungergames.commands.*;
+import me.aymanisam.hungergames.handler.*;
 import org.bukkit.World;
 import org.bukkit.WorldBorder;
-import org.bukkit.boss.BarColor;
-import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -23,21 +21,19 @@ public final class HungerGames extends JavaPlugin {
     private GameHandler gameHandler;
     public List<Player> playersAlive;
     private SetSpawnHandler setSpawnHandler;
-    private ChestRefillCommand chestRefillCommand;
     private YamlConfiguration langConfig;
 
     @Override
     public void onEnable() {
         saveLanguageFiles();
         loadDefaultLanguageConfig();
-        bossBar = getServer().createBossBar(this.getMessage("time-remaining"), BarColor.BLUE, BarStyle.SOLID);
         PlayerSignClickManager playerSignClickManager = new PlayerSignClickManager();
         setSpawnHandler = new SetSpawnHandler(this, playerSignClickManager);
         gameHandler = new GameHandler(this, setSpawnHandler, playerSignClickManager);
         getServer().getWorld("world");
         playersAlive = new ArrayList<>();
         new CompassHandler(this);
-        chestRefillCommand = new ChestRefillCommand(this);
+        ChestRefillCommand chestRefillCommand = new ChestRefillCommand(this);
 
         World world = getServer().getWorld("world");
         if (world != null) {
@@ -78,16 +74,25 @@ public final class HungerGames extends JavaPlugin {
         return setSpawnHandler;
     }
 
+    public void setBossBar(BossBar bossBar) {
+        this.bossBar = bossBar;
+    }
+
     public void saveLanguageFiles() {
         String resourceFolder = "lang";
         File langFolder = new File(getDataFolder(), resourceFolder);
         if (!langFolder.exists()) {
-            langFolder.mkdir();
+            boolean dirCreated = langFolder.mkdir();
+            if (!dirCreated) {
+                System.out.println("Could not create language directory.");
+                return;
+            }
         }
 
         for (String lang : new String[]{"en_US", "es_ES", "fr_FR", "hi_IN", "zh_CN", "ar_SA"}) {
             saveResource(resourceFolder + "/" + lang + ".yml", false);
         }
+        System.out.println("Language files saved.");
     }
 
     public void loadDefaultLanguageConfig() {
@@ -96,12 +101,13 @@ public final class HungerGames extends JavaPlugin {
         if (langFile.exists()) {
             langConfig = YamlConfiguration.loadConfiguration(langFile);
         }
+        System.out.println("Default language configuration loaded.");
     }
 
     public void loadLanguageConfig(Player player) {
         String locale = player.getLocale();
         File langFile = new File(getDataFolder(), "lang/" + locale + ".yml");
-        System.out.println(langFile);
+        System.out.println("Loading language configuration for locale: " + locale);
         if (langFile.exists()) {
             langConfig = YamlConfiguration.loadConfiguration(langFile);
         } else {
@@ -113,9 +119,11 @@ public final class HungerGames extends JavaPlugin {
         if (langConfig != null) {
             String message = langConfig.getString(key);
             if (message != null) {
+                System.out.println("Retrieved message for key: " + key);
                 return message;
             }
         }
+        System.out.println("Message not found for key: " + key);
         return "Message not found";
     }
 }

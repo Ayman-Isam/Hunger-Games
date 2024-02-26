@@ -1,3 +1,4 @@
+time-remaining: "Temps restant"
 no-permission: "Vous n'avez pas la permission d'exécuter cette commande."
 no-server: "Cette commande ne peut être exécutée que par les joueurs."
 
@@ -46,7 +47,7 @@ startgame:
   set-arena: "Configurez d'abord l'arène!"
   started: "Le jeu a déjà commencé!"
   starting: "Le jeu est en cours de démarrage."
-  20-s: "Le jeu commencera dans  20 secondes!"
+  20-s: "Le jeu commencera dans 20 secondes!"
   15-s: "15 secondes restantes!"
   10-s: "10 secondes restantes!"
   5-s: "5 secondes restantes!"
@@ -66,6 +67,7 @@ game:
   game-start: "Le jeu a commencé!"
   grace-start: "La période de grâce a commencé! Le PvP est désactivé."
   grace-end: "La période de grâce est terminée! Le PvP est activé."
+  score-info: "Infos du jeu"
   score-time: "Temps restant :"
   score-alive: "Joueurs vivants :"
   score-border: "Taille de la frontière :"

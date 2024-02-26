@@ -1,11 +1,14 @@
-package me.cantankerousally.hungergames.handler;
+package me.aymanisam.hungergames.handler;
 
-import me.cantankerousally.hungergames.HungerGames;
-import me.cantankerousally.hungergames.commands.ChestRefillCommand;
-import me.cantankerousally.hungergames.commands.SupplyDropCommand;
+import me.aymanisam.hungergames.HungerGames;
+import me.aymanisam.hungergames.commands.ChestRefillCommand;
+import me.aymanisam.hungergames.commands.SupplyDropCommand;
 import org.bukkit.*;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.ShulkerBox;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -33,7 +36,6 @@ public class GameHandler implements Listener {
     private final SetSpawnHandler setSpawnHandler;
     private final PlayerSignClickManager playerSignClickManager;
     private FileConfiguration arenaConfig = null;
-    private File arenaFile = null;
 
     public GameHandler(HungerGames plugin, SetSpawnHandler setSpawnHandler, PlayerSignClickManager playerSignClickManager) {
         this.plugin = plugin;
@@ -44,9 +46,13 @@ public class GameHandler implements Listener {
     }
 
     public void createArenaConfig() {
-        arenaFile = new File(plugin.getDataFolder(), "arena.yml");
+        File arenaFile = new File(plugin.getDataFolder(), "arena.yml");
         if (!arenaFile.exists()) {
-            arenaFile.getParentFile().mkdirs();
+            boolean dirsCreated = arenaFile.getParentFile().mkdirs();
+            if (!dirsCreated) {
+                System.out.println("Could not create necessary directories.");
+                return;
+            }
             plugin.saveResource("arena.yml", false);
         }
 
@@ -106,7 +112,10 @@ public class GameHandler implements Listener {
             if (playerLocation.getX() >= minLocation.getX() && playerLocation.getX() <= maxLocation.getX()
                     && playerLocation.getY() >= minLocation.getY() && playerLocation.getY() <= maxLocation.getY()
                     && playerLocation.getZ() >= minLocation.getZ() && playerLocation.getZ() <= maxLocation.getZ()) {
-                plugin.bossBar.addPlayer(player);
+                plugin.loadLanguageConfig(player);
+                BossBar bossBar = plugin.getServer().createBossBar(plugin.getMessage("time-remaining"), BarColor.BLUE, BarStyle.SOLID);
+                bossBar.addPlayer(player);
+                plugin.setBossBar(bossBar);
                 playersAlive.add(player);
             }
         }
@@ -137,7 +146,7 @@ public class GameHandler implements Listener {
         ScoreboardManager manager = Bukkit.getScoreboardManager();
         assert manager != null;
         Scoreboard scoreboard = manager.getNewScoreboard();
-        Objective objective = scoreboard.registerNewObjective("gameinfo", "dummy", "Game Info", RenderType.INTEGER);
+        Objective objective = scoreboard.registerNewObjective(plugin.getMessage("game.score-info"), "dummy", "Game Info", RenderType.INTEGER);
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
         Score timeLeftScore = objective.getScore(plugin.getMessage("game.score-time"));
         timeLeftScore.setScore(timeLeft);
@@ -146,9 +155,7 @@ public class GameHandler implements Listener {
         Score worldBorderSizeScore = objective.getScore(plugin.getMessage("game.score-border"));
         worldBorderSizeScore.setScore((int) world.getWorldBorder().getSize());
 
-        plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
-            worldBorderSizeScore.setScore((int) world.getWorldBorder().getSize());
-        }, 0L, 20L);
+        plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> worldBorderSizeScore.setScore((int) world.getWorldBorder().getSize()), 0L, 20L);
 
         for (Player player : playersAlive) {
             player.setScoreboard(scoreboard);
@@ -210,9 +217,6 @@ public class GameHandler implements Listener {
                 }
             }
         }.runTaskLater(plugin, chestRefillTime);
-    }
-    public PlayerSignClickManager getPlayerSignClickManager() {
-        return playerSignClickManager;
     }
 
     @EventHandler
