@@ -4,8 +4,6 @@ import me.aymanisam.hungergames.commands.*;
 import me.aymanisam.hungergames.handler.*;
 import org.bukkit.World;
 import org.bukkit.WorldBorder;
-import org.bukkit.boss.BarColor;
-import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -76,11 +74,19 @@ public final class HungerGames extends JavaPlugin {
         return setSpawnHandler;
     }
 
+    public void setBossBar(BossBar bossBar) {
+        this.bossBar = bossBar;
+    }
+
     public void saveLanguageFiles() {
         String resourceFolder = "lang";
         File langFolder = new File(getDataFolder(), resourceFolder);
         if (!langFolder.exists()) {
-            langFolder.mkdir();
+            boolean dirCreated = langFolder.mkdir();
+            if (!dirCreated) {
+                System.out.println("Could not create language directory.");
+                return;
+            }
         }
 
         for (String lang : new String[]{"en_US", "es_ES", "fr_FR", "hi_IN", "zh_CN", "ar_SA"}) {

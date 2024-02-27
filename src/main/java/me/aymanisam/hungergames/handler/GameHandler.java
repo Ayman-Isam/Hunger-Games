@@ -36,7 +36,6 @@ public class GameHandler implements Listener {
     private final SetSpawnHandler setSpawnHandler;
     private final PlayerSignClickManager playerSignClickManager;
     private FileConfiguration arenaConfig = null;
-    private File arenaFile = null;
 
     public GameHandler(HungerGames plugin, SetSpawnHandler setSpawnHandler, PlayerSignClickManager playerSignClickManager) {
         this.plugin = plugin;
@@ -47,9 +46,13 @@ public class GameHandler implements Listener {
     }
 
     public void createArenaConfig() {
-        arenaFile = new File(plugin.getDataFolder(), "arena.yml");
+        File arenaFile = new File(plugin.getDataFolder(), "arena.yml");
         if (!arenaFile.exists()) {
-            arenaFile.getParentFile().mkdirs();
+            boolean dirsCreated = arenaFile.getParentFile().mkdirs();
+            if (!dirsCreated) {
+                System.out.println("Could not create necessary directories.");
+                return;
+            }
             plugin.saveResource("arena.yml", false);
         }
 
@@ -112,6 +115,7 @@ public class GameHandler implements Listener {
                 plugin.loadLanguageConfig(player);
                 BossBar bossBar = plugin.getServer().createBossBar(plugin.getMessage("time-remaining"), BarColor.BLUE, BarStyle.SOLID);
                 bossBar.addPlayer(player);
+                plugin.setBossBar(bossBar);
                 playersAlive.add(player);
             }
         }
@@ -151,9 +155,7 @@ public class GameHandler implements Listener {
         Score worldBorderSizeScore = objective.getScore(plugin.getMessage("game.score-border"));
         worldBorderSizeScore.setScore((int) world.getWorldBorder().getSize());
 
-        plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
-            worldBorderSizeScore.setScore((int) world.getWorldBorder().getSize());
-        }, 0L, 20L);
+        plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> worldBorderSizeScore.setScore((int) world.getWorldBorder().getSize()), 0L, 20L);
 
         for (Player player : playersAlive) {
             player.setScoreboard(scoreboard);
