@@ -29,6 +29,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 
 public class GameHandler implements Listener {
 
@@ -50,7 +51,7 @@ public class GameHandler implements Listener {
         if (!arenaFile.exists()) {
             boolean dirsCreated = arenaFile.getParentFile().mkdirs();
             if (!dirsCreated) {
-                System.out.println("Could not create necessary directories.");
+                plugin.getLogger().log(Level.SEVERE, "Could not create necessary directories.");
                 return;
             }
             plugin.saveResource("arena.yml", false);
@@ -107,7 +108,7 @@ public class GameHandler implements Listener {
         Location maxLocation = new Location(world, Math.max(x1, x2), Math.max(y1, y2), Math.max(z1, z2));
 
         assert world != null;
-        for (Player player : world.getPlayers()) {
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
             Location playerLocation = player.getLocation();
             if (playerLocation.getX() >= minLocation.getX() && playerLocation.getX() <= maxLocation.getX()
                     && playerLocation.getY() >= minLocation.getY() && playerLocation.getY() <= maxLocation.getY()
@@ -117,18 +118,15 @@ public class GameHandler implements Listener {
                 bossBar.addPlayer(player);
                 plugin.setBossBar(bossBar);
                 playersAlive.add(player);
-            }
-        }
-
-        for (Player player : playersAlive) {
-            player.sendMessage(ChatColor.LIGHT_PURPLE + plugin.getMessage("game.game-start"));
-            player.sendMessage(ChatColor.LIGHT_PURPLE + plugin.getMessage("game.grace-start"));
-            if (plugin.getConfig().getBoolean("bedrock-buff.enabled") && player.getName().startsWith(".")) {
-                List<String> effectNames = plugin.getConfig().getStringList("bedrock-buff.effects");
-                for (String effectName : effectNames) {
-                    PotionEffectType effectType = PotionEffectType.getByName(effectName);
-                    if (effectType != null) {
-                        player.addPotionEffect(new PotionEffect(effectType, 200000, 1, true, false));
+                player.sendMessage(ChatColor.LIGHT_PURPLE + plugin.getMessage("game.game-start"));
+                player.sendMessage(ChatColor.LIGHT_PURPLE + plugin.getMessage("game.grace-start"));
+                if (plugin.getConfig().getBoolean("bedrock-buff.enabled") && player.getName().startsWith(".")) {
+                    List<String> effectNames = plugin.getConfig().getStringList("bedrock-buff.effects");
+                    for (String effectName : effectNames) {
+                        PotionEffectType effectType = PotionEffectType.getByName(effectName);
+                        if (effectType != null) {
+                            player.addPotionEffect(new PotionEffect(effectType, 200000, 1, true, false));
+                        }
                     }
                 }
             }
@@ -138,43 +136,43 @@ public class GameHandler implements Listener {
         int gracePeriod = plugin.getConfig().getInt("grace-period");
         plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, () -> {
             world.setPVP(true);
-            for (Player player : playersAlive) {
+            for (Player player : plugin.getServer().getOnlinePlayers()) {
+                plugin.loadLanguageConfig(player);
                 player.sendMessage(ChatColor.LIGHT_PURPLE + plugin.getMessage("game.grace-end"));
             }
         }, gracePeriod * 20L);
 
-        ScoreboardManager manager = Bukkit.getScoreboardManager();
-        assert manager != null;
-        Scoreboard scoreboard = manager.getNewScoreboard();
-        Objective objective = scoreboard.registerNewObjective(plugin.getMessage("game.score-info"), "dummy", plugin.getMessage("game.score-info"), RenderType.INTEGER);
-        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
-        Score timeLeftScore = objective.getScore(plugin.getMessage("game.score-time"));
-        timeLeftScore.setScore(timeLeft);
-        Score playersAliveScore = objective.getScore(plugin.getMessage("game.score-alive"));
-        playersAliveScore.setScore(playersAlive.size());
-        Score worldBorderSizeScore = objective.getScore(plugin.getMessage("game.score-border"));
-        worldBorderSizeScore.setScore((int) world.getWorldBorder().getSize());
-
-        plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> worldBorderSizeScore.setScore((int) world.getWorldBorder().getSize()), 0L, 20L);
-
-        for (Player player : playersAlive) {
-            player.setScoreboard(scoreboard);
-        }
-
         timerTaskId = plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
             plugin.bossBar.setProgress((double) timeLeft / plugin.getConfig().getInt("game-time"));
             timeLeft--;
-            timeLeftScore.setScore(timeLeft);
+
+            for (Player player : plugin.getServer().getOnlinePlayers()) {
+                plugin.loadLanguageConfig(player);
+                ScoreboardManager manager = Bukkit.getScoreboardManager();
+                assert manager != null;
+                Scoreboard scoreboard = manager.getNewScoreboard();
+                Objective objective = scoreboard.registerNewObjective(plugin.getMessage("game.score-name"), "dummy", plugin.getMessage("game.score-name"), RenderType.INTEGER);
+                objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+                Score timeLeftScore = objective.getScore(plugin.getMessage("game.score-time"));
+                timeLeftScore.setScore(timeLeft);
+                Score playersAliveScore = objective.getScore(plugin.getMessage("game.score-alive"));
+                playersAliveScore.setScore(playersAlive.size());
+                Score worldBorderSizeScore = objective.getScore(plugin.getMessage("game.score-border"));
+                worldBorderSizeScore.setScore((int) world.getWorldBorder().getSize());
+                player.setScoreboard(scoreboard);
+            }
 
             if (playersAlive.size() == 1) {
                 plugin.getServer().getScheduler().cancelTask(timerTaskId);
 
                 for (Player player : plugin.getServer().getOnlinePlayers()) {
+                    plugin.loadLanguageConfig(player);
                     player.sendMessage(ChatColor.LIGHT_PURPLE + plugin.getMessage("game.game-end"));
                 }
 
                 Player winner = playersAlive.get(0);
                 for (Player player : plugin.getServer().getOnlinePlayers()) {
+                    plugin.loadLanguageConfig(player);
                     player.sendMessage(ChatColor.LIGHT_PURPLE + winner.getName() + plugin.getMessage("game.winner-text"));
                     player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
                 }
@@ -184,6 +182,7 @@ public class GameHandler implements Listener {
             if (timeLeft < 0) {
                 plugin.getServer().getScheduler().cancelTask(timerTaskId);
                 for (Player player : plugin.getServer().getOnlinePlayers()) {
+                    plugin.loadLanguageConfig(player);
                     player.sendMessage(ChatColor.LIGHT_PURPLE + plugin.getMessage("game.time-up"));
                 }
                 endGame();
@@ -271,14 +270,19 @@ public class GameHandler implements Listener {
         }
         updatePlayersAliveScore();
         player.setGameMode(GameMode.SPECTATOR);
+        plugin.bossBar.removePlayer(player);
     }
 
 
     public void updatePlayersAliveScore() {
-        for (Player player : playersAlive) {
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
+            plugin.loadLanguageConfig(player);
             Scoreboard scoreboard = player.getScoreboard();
             Objective objective = scoreboard.getObjective("gameinfo");
-            assert objective != null;
+            if (objective == null) {
+                objective = scoreboard.registerNewObjective("gameinfo", "dummy", "Game Info", RenderType.INTEGER);
+                objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+            }
             Score playersAliveScore = objective.getScore("Players Alive:");
             playersAliveScore.setScore(playersAlive.size());
         }
@@ -290,6 +294,7 @@ public class GameHandler implements Listener {
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             player.setGameMode(GameMode.ADVENTURE);
             playerSignClickManager.removePlayerSignClicked(player);
+            plugin.bossBar.removePlayer(player);
         }
 
         World world = plugin.getServer().getWorld("world");
@@ -321,7 +326,6 @@ public class GameHandler implements Listener {
         assert manager != null;
         Scoreboard emptyScoreboard = manager.getNewScoreboard();
         for (Player player : plugin.getServer().getOnlinePlayers()) {
-            plugin.bossBar.removePlayer(player);
             player.setScoreboard(emptyScoreboard);
         }
         playersAlive.clear();
@@ -360,6 +364,9 @@ public class GameHandler implements Listener {
                     }
                 }
             }
+        }
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
+            plugin.bossBar.removePlayer(player);
         }
     }
 }

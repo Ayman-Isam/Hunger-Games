@@ -13,6 +13,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.logging.Level;
 
 
 public final class HungerGames extends JavaPlugin {
@@ -46,7 +47,10 @@ public final class HungerGames extends JavaPlugin {
         }
 
         saveDefaultConfig();
-        saveResource("items.yml", false);
+        File itemsFile = new File(getDataFolder(), "items.yml");
+        if (!itemsFile.exists()) {
+            saveResource("items.yml", false);
+        }
         Objects.requireNonNull(getCommand("supplydrop")).setExecutor(new SupplyDropCommand(this));
         Objects.requireNonNull(getCommand("create")).setExecutor(new ArenaSelectorCommand(this));
         Objects.requireNonNull(getCommand("select")).setExecutor(new ArenaSelectorCommand(this));
@@ -84,15 +88,17 @@ public final class HungerGames extends JavaPlugin {
         if (!langFolder.exists()) {
             boolean dirCreated = langFolder.mkdir();
             if (!dirCreated) {
-                System.out.println("Could not create language directory.");
+                this.getLogger().log(Level.SEVERE, "Could not create language directory.");
                 return;
             }
         }
 
         for (String lang : new String[]{"en_US", "es_ES", "fr_FR", "hi_IN", "zh_CN", "ar_SA"}) {
-            saveResource(resourceFolder + "/" + lang + ".yml", false);
+            File langFile = new File(langFolder, lang + ".yml");
+            if (!langFile.exists()) {
+                saveResource(resourceFolder + "/" + lang + ".yml", false);
+            }
         }
-        System.out.println("Language files saved.");
     }
 
     public void loadDefaultLanguageConfig() {
@@ -101,13 +107,11 @@ public final class HungerGames extends JavaPlugin {
         if (langFile.exists()) {
             langConfig = YamlConfiguration.loadConfiguration(langFile);
         }
-        System.out.println("Default language configuration loaded.");
     }
 
     public void loadLanguageConfig(Player player) {
         String locale = player.getLocale();
         File langFile = new File(getDataFolder(), "lang/" + locale + ".yml");
-        System.out.println("Loading language configuration for locale: " + locale);
         if (langFile.exists()) {
             langConfig = YamlConfiguration.loadConfiguration(langFile);
         } else {
@@ -119,11 +123,10 @@ public final class HungerGames extends JavaPlugin {
         if (langConfig != null) {
             String message = langConfig.getString(key);
             if (message != null) {
-                System.out.println("Retrieved message for key: " + key);
                 return message;
             }
         }
-        System.out.println("Message not found for key: " + key);
+        this.getLogger().log(Level.SEVERE, "Message not found for key: " + key);
         return "Message not found";
     }
 }
